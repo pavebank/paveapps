@@ -42,7 +42,7 @@ func after_p2pTransaction() {
     }
 
     in := SlackMessage{
-        WebHookUrl: "https://hooks.slack.com/services/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",
+        WebHookUrl: "https://hooks.slack.com/services/EXAMPLE",
         Text: fmt.Sprintf("---------\n"+
             "Transaction `%s` has been successfully sent. \n"+
             "Source `%s` (IBAN: *%s*) \n"+
