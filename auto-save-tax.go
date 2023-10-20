@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/pavebank/pdk-go"
 )
 
@@ -28,26 +26,8 @@ type p2pResult struct {
 	Status          string
 }
 
-type createVirtualAccount struct {
-	ParentAccountID string
-	Name            string
-	Description     string
-	GenerateIBAN    bool
-}
-
-type virtualAccountResult struct {
-	ID          string
-	Name        string
-	Description string
-	VIBAN       string
-	CreatedAt   time.Time
-}
-
 //export action_Log
 func action_Log(x pdk.Args)
-
-//export action_CreateVirtualAccount
-func action_CreateVirtualAccount(x pdk.Args) pdk.Args
 
 //export action_CreateP2P
 func action_CreateP2P(x pdk.Args) pdk.Args
@@ -61,18 +41,19 @@ func after_p2pTransactionReceived() {
 		action_Log(pdk.BytesToArgs([]byte(err.Error())))
 	}
 
-    // This is necessary to avoid infinite cycle if both sender and receiver are in the same legal entity.
-    // after_p2pTransactionReceived requires p2p.DestinationIBAN != "YOUR_DESTINATION_IBAN"
-    // after_p2pTransactionSent requires p2p.SourceIBAN != "YOUR_SOURCE_IBAN"
-	if p2p.DestinationIBAN != "GE93PV7860810223006996" {
-		return
+	if p2p.DestinationIBAN != "CHANGEME" { // the iban of the tax pot
+		return // do nothing if this payment is already going into the tax pot
 	}
-    
+
+    if p2p.Amount < 200000 { // $2000 
+		return // we're only going to save the tax if the inbound amount is greater than 2000 for this example
+	}
+  
     // Store params in memory for action_CreateP2P and pass it returned offset.
-	argOffset, err = pdk.StructToArgs(createP2P{
-		Description: "Move 20%",
+	argOffset, err := pdk.StructToArgs(createP2P{
+		Description: "Moving 20% because the payment is greater than $2,000",
 		Source:      p2p.DestinationIBAN,
-		Destination: "GE93PV7860810223006996", 
+		Destination: "CHANGEME", //the tax pot iban
 		Asset:       "USD",
 		AssetType:   "FIAT",
 		Amount:      (p2p.Amount / 100) * 20,
@@ -81,7 +62,7 @@ func after_p2pTransactionReceived() {
 		action_Log(pdk.BytesToArgs([]byte(err.Error())))
 	}
 	moveP2P := new(p2pResult)
-	resOffset = action_CreateP2P(argOffset)
+	resOffset := action_CreateP2P(argOffset)
 	err = pdk.ArgsToStruct(resOffset, moveP2P)
 	if err != nil {
 		action_Log(pdk.BytesToArgs([]byte(err.Error())))
