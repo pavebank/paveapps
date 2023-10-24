@@ -32,6 +32,9 @@ func action_Log(x pdk.Args)
 //export action_CreateP2P
 func action_CreateP2P(x pdk.Args) pdk.Args
 
+//export action_GetIBANByName
+func action_GetIBANByName(x pdk.Args, y pdk.Args) pdk.Args
+
 //export after_p2pTransactionReceived
 func after_p2pTransactionReceived() {
 
@@ -41,19 +44,22 @@ func after_p2pTransactionReceived() {
 		action_Log(pdk.BytesToArgs([]byte(err.Error())))
 	}
 
-	if p2p.DestinationIBAN != "CHANGEME" { // the iban of the tax pot
+	// get the iban of the tax account
+	nameOffset := pdk.BytesToArgs([]byte("Tax"))
+	legalEntityID, _ := pdk.GetConfig("legal_entity_id")
+	ibanOffset := action_GetIBANByName(pdk.BytesToArgs([]byte(legalEntityID)), nameOffset)
+	taxiban := string(pdk.ArgsToBytes(ibanOffset))
+
+	if p2p.DestinationIBAN == taxiban { // the iban of the tax pot
 		return // do nothing if this payment is already going into the tax pot
 	}
 
-    if p2p.Amount < 200000 { // $2000 
-		return // we're only going to save the tax if the inbound amount is greater than 2000 for this example
-	}
   
     // Store params in memory for action_CreateP2P and pass it returned offset.
 	argOffset, err := pdk.StructToArgs(createP2P{
-		Description: "Moving 20% because the payment is greater than $2,000",
+		Description: "Moving 20% to the tax pot",
 		Source:      p2p.DestinationIBAN,
-		Destination: "CHANGEME", //the tax pot iban
+		Destination: taxiban, //the tax pot iban
 		Asset:       "USD",
 		AssetType:   "FIAT",
 		Amount:      (p2p.Amount / 100) * 20,
