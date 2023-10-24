@@ -32,8 +32,8 @@ func action_Log(x pdk.Args)
 //export action_CreateP2P
 func action_CreateP2P(x pdk.Args) pdk.Args
 
-//export action_GetIBANByName
-func action_GetIBANByName(x pdk.Args, y pdk.Args) pdk.Args
+//export action_GetCorporateAccountIBANByName
+func action_GetCorporateAccountIBANByName(x pdk.Args, y pdk.Args) pdk.Args
 
 //export after_p2pTransactionReceived
 func after_p2pTransactionReceived() {
@@ -45,9 +45,9 @@ func after_p2pTransactionReceived() {
 	}
 
 	// get the iban of the tax account
-	nameOffset := pdk.BytesToArgs([]byte("Tax"))
+	nameOffset := pdk.BytesToArgs([]byte("tax"))
 	legalEntityID, _ := pdk.GetConfig("legal_entity_id")
-	ibanOffset := action_GetIBANByName(pdk.BytesToArgs([]byte(legalEntityID)), nameOffset)
+	ibanOffset := action_GetCorporateAccountIBANByName(pdk.BytesToArgs([]byte(legalEntityID)), nameOffset)
 	taxiban := string(pdk.ArgsToBytes(ibanOffset))
 
 	if p2p.DestinationIBAN == taxiban { // the iban of the tax pot
